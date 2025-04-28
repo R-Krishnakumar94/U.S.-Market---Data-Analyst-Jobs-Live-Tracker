@@ -102,7 +102,12 @@ def scrape_jobs():
 
 # --------- Streamlit Frontend ---------
 
-st.set_page_config(page_title="Data Analyst Jobs Dashboard", layout="wide")
+st.set_page_config(
+    page_title="📊 U.S. Data Analyst Jobs Tracker",
+    page_icon=":bar_chart:",
+    layout="wide"
+)
+
 
 st.title("U.S. Market - Data Analyst Jobs Live Tracker 🗽")
 
