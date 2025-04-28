@@ -103,15 +103,15 @@ def scrape_jobs():
 # --------- Streamlit Frontend ---------
 
 st.set_page_config(
-    page_title="📊 U.S. Data Analyst Jobs Tracker",
+    page_title="U.S. Data Analyst Jobs Tracker",
     page_icon=":bar_chart:",
     layout="wide"
 )
 
-
 st.title("U.S. Market - Data Analyst Jobs Live Tracker 🗽")
 
-st.info("Scraping live job data from Google Jobs... Please wait ⏳")
+st.info("🔎 Scraping live job data from Google Jobs... Please wait ⏳")
+
 
 # Scrape data
 df = scrape_jobs()
