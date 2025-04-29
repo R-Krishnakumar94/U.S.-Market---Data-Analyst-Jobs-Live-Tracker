@@ -13,9 +13,7 @@ Built with **Python**, **Streamlit**, **SerpApi**, and **Pandas**, and deployed 
 
 ## 📸 Screenshot
 
-![Dashboard Screenshot](screenshot.png)
-
-*(Upload a screenshot.png in the repo!)*
+![image.pngt](screenshot.png)
 
 ---
 
@@ -51,14 +49,6 @@ Built with **Python**, **Streamlit**, **SerpApi**, and **Pandas**, and deployed 
 - Add visa sponsorship tagging
 - Skill frequency trends over time
 - Dark mode UI theme
-
----
-
-## 🧑‍💻 Author
-
-- **Rakesh Krishnakumar**  
-  Connect with me on [LinkedIn](#) *(Add your LinkedIn profile here if you want!)*
-
 ---
 
 ## 📥 How to Run Locally
