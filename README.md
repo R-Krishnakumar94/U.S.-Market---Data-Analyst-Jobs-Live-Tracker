@@ -1,7 +1,7 @@
 # 📊 U.S. Market - Data Analyst Jobs Live Tracker
 
-A live web dashboard that scrapes and analyzes **Data Analyst job postings** across the United States in real-time.  
-Built with **Python**, **Streamlit**, **SerpApi**, and **Pandas**, and deployed on **Streamlit Cloud**.
+Built a Python-based web application to scrape live U.S. Data Analyst job postings using SerpApi and Google Jobs API. Developed an interactive Streamlit dashboard with dynamic filters for region and skills, real-time skill demand analysis, and job listing exploration. Deployed the app on Streamlit Cloud with GitHub integration for continuous deployment. Technologies used: Python,
+ Pandas, Matplotlib, Streamlit, Git, GitHub, SerpApi.
 
 ---
 
@@ -13,7 +13,7 @@ Built with **Python**, **Streamlit**, **SerpApi**, and **Pandas**, and deployed 
 
 ## 📸 Screenshot
 
-![image.pngt](screenshot.png)
+!(image.png)
 
 ---
 
