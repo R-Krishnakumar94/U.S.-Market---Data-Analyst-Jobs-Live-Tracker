@@ -24,9 +24,7 @@ def scrape_jobs():
         "Business Intelligence", "Data Modeling"
     ]
 
-    # US State Abbreviation Mapping
-    us_states = {
-        "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
+    us_states = {"AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
         "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "FL": "Florida",
         "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana",
         "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine",
@@ -37,8 +35,7 @@ def scrape_jobs():
         "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island",
         "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas",
         "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington",
-        "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"
-    }
+        "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming"}
 
     all_jobs = []
 
@@ -51,6 +48,11 @@ def scrape_jobs():
 
         search = GoogleSearch(params)
         results = search.get_dict()
+
+        if "error" in results:
+            st.error(f"❌ API Error: {results['error']}")
+            return pd.DataFrame()
+
         jobs_results = results.get("jobs_results", [])
 
         for job in jobs_results:
@@ -60,13 +62,11 @@ def scrape_jobs():
             salary = job.get("salary", "")
             description = job.get("description", "")
 
-            # New salary detection if missing
             if not salary:
-                salary_match = re.search(r'(\$\s?\d{2,3}[,]?\d{0,3})|(\d{2,3}[kK])|(\€\s?\d{2,3}[,]?\d{0,3})', description)
+                salary_match = re.search(r'(\$\s?\d{2,3}[,]?\d{0,3})|(\d{2,3}[kK])|(\u20AC\s?\d{2,3}[,]?\d{0,3})', description)
                 if salary_match:
                     salary = salary_match.group()
 
-            # Fix Region detection
             detected_region = ""
             if location:
                 if "Anywhere" in location:
@@ -79,7 +79,6 @@ def scrape_jobs():
             else:
                 detected_region = "Unknown"
 
-            # Skills detection
             found_skills = []
             for skill in skills_list:
                 if re.search(rf"\b{re.escape(skill)}\b", description, re.IGNORECASE):
@@ -108,23 +107,26 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("U.S. Market - Data Analyst Jobs Live Tracker 🗽")
+st.title("U.S. Market - Data Analyst Jobs Live Tracker \U0001F5FD")
 
-st.info("🔎 Scraping live job data from Google Jobs... Please wait ⏳")
-
+st.info("\U0001F50E Scraping live job data from Google Jobs... Please wait ⏳")
 
 # Scrape data
 df = scrape_jobs()
 
 # ========== Filter Sidebar ==========
-st.sidebar.header("🔎 Filter Jobs")
+st.sidebar.header("\U0001F50E Filter Jobs")
+
+if "Region" not in df.columns or df.empty:
+    st.error("❌ No job data found! Possible API quota exceeded or no jobs available.")
+    st.stop()
 
 # Region Multi-select Filter
 region_options = df["Region"].dropna().unique().tolist()
 selected_regions = st.sidebar.multiselect(
     "Select Region(s)",
     sorted(region_options),
-    default=region_options  # Default selects all
+    default=region_options
 )
 
 # Skills Multi-select Filter
@@ -132,7 +134,7 @@ skills_options = df["Skills Found"].str.split(", ").explode().dropna().unique().
 selected_skills = st.sidebar.multiselect(
     "Select Skill(s)",
     sorted(skills_options),
-    default=skills_options  # Default selects all
+    default=skills_options
 )
 
 # ========== Apply Filters ==========
@@ -147,13 +149,13 @@ if selected_skills:
 st.success(f"✅ Showing {len(filtered_df)} job postings after filtering!")
 
 # --------- Display Data Table ---------
-st.header("📋 Job Listings Table")
+
+st.header("\U0001F4CB Job Listings Table")
 st.dataframe(filtered_df)
 
-# Add download button
 csv = filtered_df.to_csv(index=False).encode('utf-8')
 st.download_button(
-    label="📥 Download Job Data as CSV",
+    label="\U0001F4E5 Download Job Data as CSV",
     data=csv,
     file_name='job_listings.csv',
     mime='text/csv',
@@ -161,8 +163,8 @@ st.download_button(
 
 # --------- Charts ---------
 
-# 1. Top Skills Chart (PERCENTAGE BASED)
-st.header("📈 Top Skills Found (%)")
+# 1. Top Skills Chart
+st.header("\U0001F4C8 Top Skills Found (%)")
 
 skills_counter = filtered_df["Skills Found"].str.split(", ").explode().value_counts()
 skills_counter_percent = (skills_counter / skills_counter.sum()) * 100
@@ -181,8 +183,8 @@ ax1.set_ylabel("Skills")
 ax1.set_title("Top Skills (in %)")
 st.pyplot(fig1)
 
-# 2. Jobs by Region Chart (Full Names Visible)
-st.header("🌍 Jobs by Region")
+# 2. Jobs by Region Chart
+st.header("\U0001F30D Jobs by Region")
 
 region_counter = filtered_df["Region"].value_counts()
 
