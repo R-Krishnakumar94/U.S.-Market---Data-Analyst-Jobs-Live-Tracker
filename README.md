@@ -13,7 +13,7 @@ Built a Python-based web application to scrape live U.S. Data Analyst job postin
 
 ## 📸 Screenshot
 
-![Dashboard Screenshot](UI Screenshot.png)
+![Dashboard Screenshot](UI Screenshot .png)
 
 
 ---
