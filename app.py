@@ -24,7 +24,6 @@ def scrape_jobs():
         "Business Intelligence", "Data Modeling"
     ]
 
-    # US State Abbreviation Mapping
     us_states = {
         "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
         "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "FL": "Florida",
@@ -42,10 +41,11 @@ def scrape_jobs():
 
     all_jobs = []
 
-    for search_title in job_titles:
+    for title in job_titles:
         params = {
             "engine": "google_jobs",
-            "q": search_title,
+            "q": title,
+            "location": "United States",
             "api_key": api_key
         }
 
@@ -54,41 +54,34 @@ def scrape_jobs():
         jobs_results = results.get("jobs_results", [])
 
         for job in jobs_results:
-            title = job.get("title", "")
+            job_title = job.get("title", "")
             company = job.get("company_name", "")
             location = job.get("location", "")
             salary = job.get("salary", "")
             description = job.get("description", "")
 
-            # New salary detection if missing
             if not salary:
-                salary_match = re.search(r'(\$\s?\d{2,3}[,]?\d{0,3})|(\d{2,3}[kK])|(\€\s?\d{2,3}[,]?\d{0,3})', description)
-                if salary_match:
-                    salary = salary_match.group()
+                match = re.search(r'(\$\s?\d{2,3}[,]?\d{0,3})|(\d{2,3}[kK])|(\€\s?\d{2,3}[,]?\d{0,3})', description)
+                if match:
+                    salary = match.group()
 
-            # Fix Region detection
-            detected_region = ""
+            # Region detection
+            detected_region = "Unknown"
             if location:
                 if "Anywhere" in location:
                     detected_region = "Remote"
                 elif "," in location:
-                    potential_region = location.split(",")[-1].strip()
-                    detected_region = us_states.get(potential_region, potential_region)
+                    part = location.split(",")[-1].strip()
+                    detected_region = us_states.get(part, part)
                 else:
                     detected_region = location
-            else:
-                detected_region = "Unknown"
 
             # Skills detection
-            found_skills = []
-            for skill in skills_list:
-                if re.search(rf"\b{re.escape(skill)}\b", description, re.IGNORECASE):
-                    found_skills.append(skill)
-
+            found_skills = [skill for skill in skills_list if re.search(rf"\b{re.escape(skill)}\b", description, re.IGNORECASE)]
             skills_str = ", ".join(found_skills)
 
             all_jobs.append({
-                "Job Title": title,
+                "Job Title": job_title,
                 "Company": company,
                 "Location": location,
                 "Region": detected_region,
@@ -96,7 +89,7 @@ def scrape_jobs():
                 "Skills Found": skills_str
             })
 
-        time.sleep(2)
+        time.sleep(1.5)
 
     return pd.DataFrame(all_jobs)
 
@@ -112,90 +105,60 @@ st.title("U.S. Market - Data Analyst Jobs Live Tracker 🗽")
 
 st.info("🔎 Scraping live job data from Google Jobs... Please wait ⏳")
 
-
-# Scrape data
 df = scrape_jobs()
 
-# ========== Filter Sidebar ==========
-st.sidebar.header("🔎 Filter Jobs")
+# ---------- Validations ----------
+if df.empty:
+    st.error("❌ No job data found. Please try again later or check API limits.")
+    st.stop()
 
-# Region Multi-select Filter
-region_options = df["Region"].dropna().unique().tolist()
-selected_regions = st.sidebar.multiselect(
-    "Select Region(s)",
-    sorted(region_options),
-    default=region_options  # Default selects all
-)
+st.write("🔧 DEBUG - Columns in dataframe:", df.columns.tolist())
 
-# Skills Multi-select Filter
-skills_options = df["Skills Found"].str.split(", ").explode().dropna().unique().tolist()
-selected_skills = st.sidebar.multiselect(
-    "Select Skill(s)",
-    sorted(skills_options),
-    default=skills_options  # Default selects all
-)
+# Region filter with column check
+if "Region" in df.columns:
+    region_options = df["Region"].dropna().unique().tolist()
+    selected_regions = st.multiselect("Select Region(s):", region_options, default=region_options)
+    df = df[df["Region"].isin(selected_regions)]
+else:
+    st.warning("⚠️ 'Region' column missing. Showing all data.")
+    selected_regions = []
 
-# ========== Apply Filters ==========
-filtered_df = df.copy()
-
-if selected_regions:
-    filtered_df = filtered_df[filtered_df["Region"].isin(selected_regions)]
-
-if selected_skills:
-    filtered_df = filtered_df[filtered_df["Skills Found"].str.contains('|'.join(selected_skills), case=False, na=False)]
-
-st.success(f"✅ Showing {len(filtered_df)} job postings after filtering!")
-
-# --------- Display Data Table ---------
+# --------- Display Table ---------
 st.header("📋 Job Listings Table")
-st.dataframe(filtered_df)
+st.dataframe(df)
 
-# Add download button
-csv = filtered_df.to_csv(index=False).encode('utf-8')
-st.download_button(
-    label="📥 Download Job Data as CSV",
-    data=csv,
-    file_name='job_listings.csv',
-    mime='text/csv',
-)
+csv = df.to_csv(index=False).encode("utf-8")
+st.download_button("📥 Download Job Data as CSV", csv, "job_listings.csv", "text/csv")
 
 # --------- Charts ---------
 
-# 1. Top Skills Chart (PERCENTAGE BASED)
-st.header("📈 Top Skills Found (%)")
+# Skills Chart
+if "Skills Found" in df.columns:
+    st.header("📈 Top Skills Found (%)")
+    skills = df["Skills Found"].str.split(", ").explode().value_counts()
+    skill_pct = (skills / skills.sum()) * 100
 
-skills_counter = filtered_df["Skills Found"].str.split(", ").explode().value_counts()
-skills_counter_percent = (skills_counter / skills_counter.sum()) * 100
+    fig1, ax1 = plt.subplots(figsize=(10, 6))
+    skill_pct.sort_values().plot(kind="barh", ax=ax1)
+    for bar in ax1.patches:
+        ax1.text(bar.get_width() + 0.5, bar.get_y() + 0.2, f"{bar.get_width():.1f}%", fontsize=8)
+    ax1.set_xlabel("Percentage (%)")
+    ax1.set_title("Top Skills (in %)")
+    st.pyplot(fig1)
+else:
+    st.warning("⚠️ No 'Skills Found' column to plot.")
 
-fig1, ax1 = plt.subplots(figsize=(10, 8))
-skills_counter_percent_sorted = skills_counter_percent.sort_values(ascending=False)
-skills_counter_percent_sorted.plot(kind="barh", ax=ax1)
-ax1.invert_yaxis()
+# Region Chart
+if "Region" in df.columns:
+    st.header("🌍 Jobs by Region")
+    region_count = df["Region"].value_counts()
 
-for i in ax1.patches:
-    ax1.text(i.get_width() + 0.5, i.get_y() + 0.3,
-             f"{i.get_width():.1f}%", fontsize=9, color='black')
-
-ax1.set_xlabel("Percentage (%)")
-ax1.set_ylabel("Skills")
-ax1.set_title("Top Skills (in %)")
-st.pyplot(fig1)
-
-# 2. Jobs by Region Chart (Full Names Visible)
-st.header("🌍 Jobs by Region")
-
-region_counter = filtered_df["Region"].value_counts()
-
-fig2, ax2 = plt.subplots(figsize=(10, 8))
-region_counter_sorted = region_counter.sort_values(ascending=False)
-region_counter_sorted.plot(kind="barh", ax=ax2)
-ax2.invert_yaxis()
-
-for i in ax2.patches:
-    ax2.text(i.get_width() + 0.5, i.get_y() + 0.3,
-             str(int(i.get_width())), fontsize=9, color='black')
-
-ax2.set_xlabel("Number of Jobs")
-ax2.set_ylabel("Region")
-ax2.set_title("Jobs by Region")
-st.pyplot(fig2)
+    fig2, ax2 = plt.subplots(figsize=(10, 6))
+    region_count.sort_values().plot(kind="barh", ax=ax2)
+    for bar in ax2.patches:
+        ax2.text(bar.get_width() + 0.5, bar.get_y() + 0.2, str(int(bar.get_width())), fontsize=8)
+    ax2.set_xlabel("Number of Jobs")
+    ax2.set_title("Jobs by Region")
+    st.pyplot(fig2)
+else:
+    st.warning("⚠️ No 'Region' data to plot.")
