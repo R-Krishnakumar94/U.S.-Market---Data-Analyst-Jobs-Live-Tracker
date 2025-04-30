@@ -133,20 +133,23 @@ st.download_button("📥 Download Job Data as CSV", csv, "job_listings.csv", "te
 # --------- Charts ---------
 
 # Skills Chart
-if "Skills Found" in df.columns:
+if "Skills Found" in df.columns and df["Skills Found"].notna().any():
     st.header("📈 Top Skills Found (%)")
     skills = df["Skills Found"].str.split(", ").explode().value_counts()
-    skill_pct = (skills / skills.sum()) * 100
 
-    fig1, ax1 = plt.subplots(figsize=(10, 6))
-    skill_pct.sort_values().plot(kind="barh", ax=ax1)
-    for bar in ax1.patches:
-        ax1.text(bar.get_width() + 0.5, bar.get_y() + 0.2, f"{bar.get_width():.1f}%", fontsize=8)
-    ax1.set_xlabel("Percentage (%)")
-    ax1.set_title("Top Skills (in %)")
-    st.pyplot(fig1)
+    if not skills.empty:
+        skill_pct = (skills / skills.sum()) * 100
+        fig1, ax1 = plt.subplots(figsize=(10, 6))
+        skill_pct.sort_values().plot(kind="barh", ax=ax1)
+        for bar in ax1.patches:
+            ax1.text(bar.get_width() + 0.5, bar.get_y() + 0.2, f"{bar.get_width():.1f}%", fontsize=8)
+        ax1.set_xlabel("Percentage (%)")
+        ax1.set_title("Top Skills (in %)")
+        st.pyplot(fig1)
+    else:
+        st.warning("⚠️ No skill data available to display.")
 else:
-    st.warning("⚠️ No 'Skills Found' column to plot.")
+    st.warning("⚠️ No 'Skills Found' column or values to display.")
 
 # Region Chart
 if "Region" in df.columns:
