@@ -112,8 +112,6 @@ if df.empty:
     st.error("❌ No job data found. Please try again later or check API limits.")
     st.stop()
 
-st.write("🔧 DEBUG - Columns in dataframe:", df.columns.tolist())
-
 # Region filter with column check
 if "Region" in df.columns:
     region_options = df["Region"].dropna().unique().tolist()
