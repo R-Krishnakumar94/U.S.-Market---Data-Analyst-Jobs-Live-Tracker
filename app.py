@@ -24,7 +24,6 @@ def scrape_jobs():
         "Business Intelligence", "Data Modeling"
     ]
 
-    # US State Abbreviation Mapping
     us_states = {
         "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
         "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "FL": "Florida",
@@ -60,13 +59,11 @@ def scrape_jobs():
             salary = job.get("salary", "")
             description = job.get("description", "")
 
-            # New salary detection if missing
             if not salary:
                 salary_match = re.search(r'(\$\s?\d{2,3}[,]?\d{0,3})|(\d{2,3}[kK])|(\€\s?\d{2,3}[,]?\d{0,3})', description)
                 if salary_match:
                     salary = salary_match.group()
 
-            # Fix Region detection
             detected_region = ""
             if location:
                 if "Anywhere" in location:
@@ -79,7 +76,6 @@ def scrape_jobs():
             else:
                 detected_region = "Unknown"
 
-            # Skills detection
             found_skills = []
             for skill in skills_list:
                 if re.search(rf"\b{re.escape(skill)}\b", description, re.IGNORECASE):
@@ -109,30 +105,36 @@ st.set_page_config(
 )
 
 st.title("U.S. Market - Data Analyst Jobs Live Tracker 🗽")
-
 st.info("🔎 Scraping live job data from Google Jobs... Please wait ⏳")
-
 
 # Scrape data
 df = scrape_jobs()
 
+# 🛡️ Safety Checks
+if df.empty:
+    st.error("❌ No job data found. The scraping returned no results. Please try again later or check your API key usage.")
+    st.stop()
+
+required_columns = {"Region", "Skills Found"}
+if not required_columns.issubset(df.columns):
+    st.error(f"❌ Missing expected columns in scraped data: {required_columns - set(df.columns)}")
+    st.stop()
+
 # ========== Filter Sidebar ==========
 st.sidebar.header("🔎 Filter Jobs")
 
-# Region Multi-select Filter
 region_options = df["Region"].dropna().unique().tolist()
 selected_regions = st.sidebar.multiselect(
     "Select Region(s)",
     sorted(region_options),
-    default=region_options  # Default selects all
+    default=region_options
 )
 
-# Skills Multi-select Filter
 skills_options = df["Skills Found"].str.split(", ").explode().dropna().unique().tolist()
 selected_skills = st.sidebar.multiselect(
     "Select Skill(s)",
     sorted(skills_options),
-    default=skills_options  # Default selects all
+    default=skills_options
 )
 
 # ========== Apply Filters ==========
@@ -150,7 +152,6 @@ st.success(f"✅ Showing {len(filtered_df)} job postings after filtering!")
 st.header("📋 Job Listings Table")
 st.dataframe(filtered_df)
 
-# Add download button
 csv = filtered_df.to_csv(index=False).encode('utf-8')
 st.download_button(
     label="📥 Download Job Data as CSV",
@@ -161,7 +162,6 @@ st.download_button(
 
 # --------- Charts ---------
 
-# 1. Top Skills Chart (PERCENTAGE BASED)
 st.header("📈 Top Skills Found (%)")
 
 skills_counter = filtered_df["Skills Found"].str.split(", ").explode().value_counts()
@@ -181,7 +181,7 @@ ax1.set_ylabel("Skills")
 ax1.set_title("Top Skills (in %)")
 st.pyplot(fig1)
 
-# 2. Jobs by Region Chart (Full Names Visible)
+# 2. Jobs by Region
 st.header("🌍 Jobs by Region")
 
 region_counter = filtered_df["Region"].value_counts()
