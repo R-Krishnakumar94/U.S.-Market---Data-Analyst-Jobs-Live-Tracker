@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 # --------- Scraping Function ---------
 @st.cache_data
 def scrape_jobs():
-    api_key = "b9fd6f440c0f1ea6c9b6a83156b8c0c935d77d71a1468440e753f4e3d2d65214"
+    api_key = "e16223a41fccca3cbd2d2fb51fe3765e7d9b488ea50ee88222934097eaf7efe8"
 
     job_titles = [
         "Data Analyst", "Junior Data Analyst", "Senior Data Analyst",
